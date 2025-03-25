@@ -1,32 +1,18 @@
 const { test, after, beforeEach, describe } = require('node:test')
-const Blog = require('../models/blog')
+
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 
 const api = supertest(app)
-
-const initialBlogs = [
-    {
-        title: 'Blogia pukkaa',
-        author: 'Pasi Pukkaaja',
-        url: 'osoite.com',
-        likes: 22,
-    },
-    {
-        title: 'Testi 2',
-        author: 'Pilvi Pössyttelijä',
-        url: 'mainio.com',
-        likes: 322,
-    },
-  ]
-
+const helper = require('./test_helper')
+const Blog = require('../models/blog')
 beforeEach(async () => {
     await Blog.deleteMany({})
-    let blogObject = new Blog(initialBlogs[0])
+    let blogObject = new Blog(helper.initialBlogs[0])
     await blogObject.save()
-    blogObject = new Blog(initialBlogs[1])
+    blogObject = new Blog(helper.initialBlogs[1])
     await blogObject.save()
 })
 
@@ -69,7 +55,7 @@ describe('adding blogs', () => {
 
         const contents = response.body.map(b => b.title)
 
-        assert.strictEqual(response.body.length, initialBlogs.length + 1)
+        assert.strictEqual(response.body.length, helper.initialBlogs.length + 1)
 
         assert(contents.includes('Uusi blogipäivitys, testi'))
     })
@@ -113,6 +99,24 @@ describe('adding blogs', () => {
             .expect(400)
 
     })
+})
+
+describe('deleting blogs', () => {
+    test('blog can be deleted', async () => {
+        const blogAtStart = await helper.blogsInDb()
+        const blogToDelete = blogAtStart[0]
+    
+        await api
+          .delete(`/api/blogs/${blogToDelete.id}`)
+          .expect(204)
+    
+        const blogsAtEnd = await helper.blogsInDb()
+    
+        const contents = blogsAtEnd.map(r => r.title)
+        assert(!contents.includes(blogToDelete.title))
+    
+        assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+      })
 })
 after(async () => {
   await mongoose.connection.close()
