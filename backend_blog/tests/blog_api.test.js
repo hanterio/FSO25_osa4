@@ -11,12 +11,20 @@ const helper = require('./test_helper')
 
 const User = require('../models/user')
 const Blog = require('../models/blog')
+const { send } = require('node:process')
 beforeEach(async () => {
     await Blog.deleteMany({})
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash('salainen', 10)
+    const user = new User({ username: 'kokeilu', passwordHash })
+    await user.save()
+
     let blogObject = new Blog(helper.initialBlogs[0])
     await blogObject.save()
     blogObject = new Blog(helper.initialBlogs[1])
     await blogObject.save()
+    
 })
 
 describe('Testing api', () => {
@@ -42,7 +50,17 @@ describe('Testing api', () => {
     })
 })
 describe('adding blogs', () => {
-    test('a blog can be added', async () => {
+    test('a blog can be added', async () => {        
+        const kirjautuminen = {
+            username: 'kokeilu',
+            password: 'salainen'
+        }
+        const loginResponse = await api
+            .post('/api/login')
+            .send(kirjautuminen)
+        
+        const token = loginResponse.body.token
+
         const newBlog = {
             title: 'Uusi blogipäivitys, testi',
             author: 'Pekka Päivittäjä',
@@ -51,9 +69,11 @@ describe('adding blogs', () => {
         }
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
+        
         const response = await api.get('/api/blogs')
 
         const contents = response.body.map(b => b.title)
@@ -62,7 +82,17 @@ describe('adding blogs', () => {
 
         assert(contents.includes('Uusi blogipäivitys, testi'))
     })
-    test('if likes not added then 0', async () => {
+    test('if likes not added then 0', async () => {        
+        const kirjautuminen = {
+            username: 'kokeilu',
+            password: 'salainen'
+        }
+        const loginResponse = await api
+            .post('/api/login')
+            .send(kirjautuminen)
+        
+        const token = loginResponse.body.token
+
         const newBlog = {
             title: 'Uusi blogipäivitys, testi',
             author: 'Pekka Päivittäjä',
@@ -70,6 +100,7 @@ describe('adding blogs', () => {
         }
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -79,6 +110,16 @@ describe('adding blogs', () => {
         assert.strictEqual(lisattyBlog.likes, 0)
     })
     test('if title missing then 400', async () => {
+        const kirjautuminen = {
+            username: 'kokeilu',
+            password: 'salainen'
+        }
+        const loginResponse = await api
+            .post('/api/login')
+            .send(kirjautuminen)
+        
+        const token = loginResponse.body.token
+        
         const newBlog = {
             author: 'Pekka Päivittäjä',
             url: 'osoite.fi',
@@ -86,11 +127,22 @@ describe('adding blogs', () => {
         }
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(400)
 
     })
     test('if url missing then 400', async () => {
+        const kirjautuminen = {
+            username: 'kokeilu',
+            password: 'salainen'
+        }
+        const loginResponse = await api
+            .post('/api/login')
+            .send(kirjautuminen)
+        
+        const token = loginResponse.body.token
+        
         const newBlog = {
             title: 'Uusi blogipäivitys, testi',
             author: 'Pekka Päivittäjä',
@@ -98,19 +150,63 @@ describe('adding blogs', () => {
         }
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(400)
 
+    })
+    test('a blog can not be added if token is missing', async () => {        
+
+        const newBlog = {
+            title: 'Uusi blogipäivitys, testi',
+            author: 'Pekka Päivittäjä',
+            url: 'osoite.fi',
+            likes: 122,
+        }
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(401)
+            .expect('Content-Type', /application\/json/)
+        
+        const response = await api.get('/api/blogs')
+
+        const contents = response.body.map(b => b.title)
+
+        assert.strictEqual(response.body.length, helper.initialBlogs.length)
     })
 })
 
 describe('deleting blogs', () => {
     test('blog can be deleted', async () => {
-        const blogAtStart = await helper.blogsInDb()
-        const blogToDelete = blogAtStart[0]
-    
+        const passwordHash = await bcrypt.hash('salainen', 10)
+        const user = new User({ username: 'kokeilu2', passwordHash })
+        await user.save()
+        const newBlog = new Blog({
+            title: 'Uusi blogipäivitys tuhoamista varten, testi',
+            author: 'Pekka Päivittäjä',
+            url: 'osoite.fi',
+            likes: 122,
+            user: user._id
+        })
+        await newBlog.save()
+        const kirjautuminen = {
+            username: 'kokeilu2',
+            password: 'salainen'
+        }
+        const loginResponse = await api
+            .post('/api/login')
+            .send(kirjautuminen)
+        
+        const token = loginResponse.body.token
+
+        const blogsAtStart = await helper.blogsInDb()
+        const blogToDelete = blogsAtStart.find(b => b.title === 'Uusi blogipäivitys tuhoamista varten, testi')
+        console.log('Blog user ID:', blogToDelete.user.toString());
+        console.log('Authenticated user ID:', user._id.toString())
         await api
           .delete(`/api/blogs/${blogToDelete.id}`)
+          .set('Authorization', `Bearer ${token}`)
           .expect(204)
     
         const blogsAtEnd = await helper.blogsInDb()
@@ -118,7 +214,7 @@ describe('deleting blogs', () => {
         const contents = blogsAtEnd.map(r => r.title)
         assert(!contents.includes(blogToDelete.title))
     
-        assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1)
+        assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
       })
 })
 describe('blogien muokkaamista', () => {
