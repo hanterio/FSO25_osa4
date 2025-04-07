@@ -21,4 +21,17 @@ const create = async newObject => {
   return response.data
 }
 
-export default { getAll, create, setToken }
+const update = async (id, paivitettyBlogi) => {
+  const response = await axios.put(`${baseUrl}/${id}`, paivitettyBlogi)
+  return response.data
+}
+
+const remove = async (id) => {
+  const config = {
+    headers: { Authorization: token }
+  }
+  console.log("kirjautunut kayttaja:", token)
+  return await axios.delete(`${baseUrl}/${id}`, config)
+}
+
+export default { getAll, create, setToken, update, remove }
