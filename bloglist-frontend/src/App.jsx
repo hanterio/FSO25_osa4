@@ -4,11 +4,11 @@ import Notification from './components/Notification'
 import BlogForm from './components/BlogForm'
 import Togglable from './components/Togglable'
 import blogService from './services/blogs'
-import loginService from './services/login' 
+import loginService from './services/login'
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
-  const [username, setUsername] = useState('') 
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [user, setUser] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
@@ -19,7 +19,7 @@ const App = () => {
   useEffect(() => {
     blogService.getAll().then(blogs =>
       setBlogs( blogs )
-    )  
+    )
   }, [])
 
   useEffect(() => {
@@ -106,17 +106,17 @@ const App = () => {
         return newBlogs
       })
     } catch (error) {
-      console.error("Error removing blog entry")
+      console.error('Error removing blog entry')
     }
   }
 
   const loginForm = () => (
-    
+
     <form onSubmit={handleLogin}>
       <div>
-      <h2>Login</h2>
+        <h2>Login</h2>
         username
-          <input
+        <input
           type="text"
           value={username}
           name="Username"
@@ -125,7 +125,7 @@ const App = () => {
       </div>
       <div>
         password
-          <input
+        <input
           type="password"
           value={password}
           name="Password"
@@ -133,36 +133,36 @@ const App = () => {
         />
       </div>
       <button type="submit">login</button>
-    </form>      
+    </form>
   )
 
   const logoutButton = () => (
-        <button type="button" onClick={handleLogout}>logout</button>      
+    <button type="button" onClick={handleLogout}>logout</button>
   )
 
 
   return (
-    <div>       
+    <div>
       <Notification
         message={message || errorMessage}
         className={errorMessage ? 'errorMessage' : 'message'}/>
       {!user && loginForm()}
       {user && <div>
-      <h2>Blogs</h2>
-      <p> {user.name} logged in {logoutButton()}</p>
-      <Togglable buttonLabel='new Blog' ref={blogFormRef}>
-        <BlogForm createBlog={addBlog} />
-      </Togglable>
+        <h2>Blogs</h2>
+        <p> {user.name} logged in {logoutButton()}</p>
+        <Togglable buttonLabel='new Blog' ref={blogFormRef}>
+          <BlogForm createBlog={addBlog} />
+        </Togglable>
 
-      {blogs.sort((a, b) => a.likes - b.likes).map(blog =>
-        <Blog
-          key={blog.id}
-          blog={blog}
-          user={user}
-          onLike={handleLike}
-          poistaBlogi={handlePoisto}
-        />
-      )}
+        {blogs.sort((a, b) => a.likes - b.likes).map(blog =>
+          <Blog
+            key={blog.id}
+            blog={blog}
+            user={user}
+            onLike={handleLike}
+            poistaBlogi={handlePoisto}
+          />
+        )}
       </div>}
     </div>
   )}

@@ -30,7 +30,7 @@ const remove = async (id) => {
   const config = {
     headers: { Authorization: token }
   }
-  console.log("kirjautunut kayttaja:", token)
+  console.log('kirjautunut kayttaja:', token)
   return await axios.delete(`${baseUrl}/${id}`, config)
 }
 
