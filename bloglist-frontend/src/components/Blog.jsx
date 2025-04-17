@@ -11,7 +11,8 @@ const Blog = ({ blog, onLike, poistaBlogi, user }) => {
     marginBottom: 5
   }
 
-  const hideWhenVisible = { display: viewAll ? 'none' : '' }
+
+  const toggleView = () => setViewAll(!viewAll)
   const showWhenVisible = { display: viewAll ? '' : 'none' }
 
   const handleLiketys = () => {
@@ -23,14 +24,17 @@ const Blog = ({ blog, onLike, poistaBlogi, user }) => {
 
   return (
     <div style={blogStyle}>
-      <div style={hideWhenVisible}>
-        {blog.title} {blog.author} <button onClick={() => setViewAll(true)}>view</button>
+      <div>
+        {blog.title} {blog.author}
+        <button onClick={toggleView}>{viewAll ? 'hide' : 'view'}</button>
       </div>
       <div style={showWhenVisible}>
-        {blog.title} {blog.author} <button onClick={() => setViewAll(false)}>hide</button><br />
-        {blog.url}<br />
-        likes {blog.likes} <button onClick={handleLiketys}>like</button><br />
-        {blog.user.name}<br />
+        <div>{blog.url}</div>
+        <div>
+          likes {blog.likes}
+          <button onClick={handleLiketys}>like</button>
+        </div>
+        <div>{blog.user.name}</div>
         {user && blog.user.username === user.username && (
           <button onClick={handlePoisto}>remove</button>
         )}
